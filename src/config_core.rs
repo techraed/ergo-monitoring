@@ -1,8 +1,13 @@
 use config::{Config, File};
-use reqwest::Url;
+use thiserror::Error;
+
+type Result<T> = std::result::Result<T, ConfigError>;
 
 pub trait MonitoringConfig {
-    fn get_sources(&self) -> Result<Vec<Url>, ()>;
+    // Config file keys
+    const SOURCES: &'static str = "sources";
+
+    fn get_sources(&self) -> Result<Vec<String>>;
 }
 
 #[derive(Debug, Clone)]
@@ -11,27 +16,38 @@ pub struct MonitoringYmlConfig {
 }
 
 impl MonitoringYmlConfig {
-    pub fn new(path_str: &str) -> Result<Self, ()> {
+    pub fn new(path_str: &str) -> Result<Self> {
         if !path_str.ends_with("yml") {
-            return Err(());
+            return Err(ConfigError::InvalidFormat);
         }
         let mut config = Config::new();
-        config.merge(File::with_name(path_str)).or(Err(()))?;
+        config
+            .merge(File::with_name(path_str))
+            .expect("config can't be changed");
 
         Ok(MonitoringYmlConfig { config })
     }
-
 }
 
 impl MonitoringConfig for MonitoringYmlConfig {
-    fn get_sources(&self) -> Result<Vec<Url>, ()> {
-        let sources = self.config.get_array("sources").or(Err(()))?;
-        let format_source = |source| { format!("http://{}/info", source) };
+    fn get_sources(&self) -> Result<Vec<String>> {
+        let sources = self
+            .config
+            .get_array(Self::SOURCES)
+            .or(Err(ConfigError::KeyNotFound))?;
+        let format_source = |source| format!("http://{}/info", source);
         sources
             .iter()
-            .map(|source_value| format_source(source_value))
-            .map(|source_str| Url::parse(source_str.as_str()).or(Err(())))
+            .map(|source_value| Ok(format_source(source_value)))
             .collect()
     }
+}
 
+#[derive(Error, Copy, Clone, PartialEq, Eq, Debug)]
+pub enum ConfigError {
+    #[error("Invalid config format")]
+    InvalidFormat,
+
+    #[error("Config key not found")]
+    KeyNotFound,
 }

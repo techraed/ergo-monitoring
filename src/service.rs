@@ -1,29 +1,46 @@
 use std::collections::HashMap;
 
-use reqwest;
+use reqwest::{blocking::get, Url};
+use thiserror::Error;
 
-use crate::config_core::{MonitoringConfig};
+use crate::config_core::MonitoringConfig;
 
-#[derive(Debug)]
-pub struct MonitoringService<C: MonitoringConfig> {
-    config: C
+type Result<T> = std::result::Result<T, ServiceError>;
+
+pub fn run<C: MonitoringConfig>(config: C) -> Result<Vec<u64>> {
+    let url_sources = {
+        let sources = config
+            .get_sources()
+            .map_err(|err| ServiceError::CannotInitializeService(err.to_string()))?;
+        to_url(sources)?
+    };
+    Ok(get_peers_number(url_sources))
 }
 
-impl<C: MonitoringConfig> MonitoringService<C> {
-    pub fn new(config: C) -> Self {
-        MonitoringService{ config }
-    }
+fn to_url(sources: Vec<String>) -> Result<Vec<Url>> {
+    sources
+        .iter()
+        .map(|url| Url::parse(url).or(Err(ServiceError::CannotConvertData)))
+        .collect()
+}
 
-    pub fn run(&self) -> Result<Vec<Option<u64>>, ()> {
-        let mut res = vec![];
-        let sources = self.config.get_sources().or(Err(()))?;
-        for source in sources {
-            let resp = reqwest::blocking::get(source).or(Err(()))?;
-            println!("{:?}", resp);
-            let json_resp = resp.json::<HashMap<String, serde_json::Value>>().or(Err(()))?;
-            let b = json_resp.get("peersCount").ok_or(())?;
-            res.push(b.as_u64());
-        }
-        Ok(res)
+fn get_peers_number(sources: Vec<Url>) -> Vec<u64> {
+    let res = vec![];
+    for source in sources {
+        let response = get(source);
+        println!("{:?}", response);
     }
+    res
+}
+
+#[derive(Error, Clone, PartialEq, Eq, Debug)]
+pub enum ServiceError {
+    #[error("Can't initialize service {0}")]
+    CannotInitializeService(String),
+
+    #[error("Config key not found")]
+    KeyNotFound,
+
+    #[error("Config data can't be converted to proper type")]
+    CannotConvertData,
 }
