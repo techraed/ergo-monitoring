@@ -10,7 +10,7 @@ use reqwest::{Client, Url};
 
 use crate::config::{MonitoringConfig, ConfigError};
 
-use self::req::{create_client, InfoResp};
+use self::req::{create_client, InfoResponse};
 
 pub(super) async fn run<C: TryInto<MonitoringConfig, Error = ConfigError>>(config: C) -> Result<(), Error> {
     let config = config.try_into()?;
@@ -22,7 +22,7 @@ pub(super) async fn run<C: TryInto<MonitoringConfig, Error = ConfigError>>(confi
     Ok(())
 }
 
-async fn get_peer_data(sources: Vec<Url>) -> Vec<(InfoResp, Url)> {
+async fn get_peer_data(sources: Vec<Url>) -> Vec<(InfoResponse, Url)> {
     let client = create_client(2);
     let mut tasks = Vec::with_capacity(sources.len());
     for source in sources {
@@ -35,26 +35,20 @@ async fn get_peer_data(sources: Vec<Url>) -> Vec<(InfoResp, Url)> {
         .collect()
 }
 
-async fn get_data_from_source(client: Arc<Client>, source: Url) -> Result<(InfoResp, Url), Error> {
+async fn get_data_from_source(client: Arc<Client>, source: Url) -> Result<(InfoResponse, Url), Error> {
     let resp = client.get(source.as_str()).send().await?;
-    let info_resp = resp.json::<InfoResp>().await?;
+    let info_resp = resp.json::<InfoResponse>().await?;
     Ok((info_resp, source))
 }
 
 // TODO any better?
-fn dump_peer_data(peers_num: Vec<(InfoResp, Url)>) {
+fn dump_peer_data(peers_num: Vec<(InfoResponse, Url)>) {
     println!("Peers number monitoring");
     println!("--------------------------------------------------------------------------------------------------------");
-    println!(
-        "|{:^36}|{}|{}|{}|{}|",
-        "Peer", " Peers number ", " Headers height ", " Full height ", " Unconfirmed count "
-    );
+    println!("|{:^36}|{}|{}|{}|{}|", "Peer", " Peers number ", " Headers height ", " Full height ", " Unconfirmed count ");
     println!("--------------------------------------------------------------------------------------------------------");
     peers_num.iter().for_each(|(ir, url)| {
-        println!(
-            "|{:^36}|{:^14}|{:^16}|{:^13}|{:^19}|",
-            url, ir.peers_number, ir.headers_height, ir.full_height, ir.unconfirmed_count
-        )
+        println!("|{:^36}|{:^14}|{:^16}|{:^13}|{:^19}|", url, ir.peers_number, ir.headers_height, ir.full_height, ir.unconfirmed_count)
     });
     println!("--------------------------------------------------------------------------------------------------------");
 }
@@ -70,7 +64,7 @@ mod req {
 
     /// Deserialized json response from /info request to provided source
     #[derive(Debug, Deserialize)]
-    pub(super) struct InfoResp {
+    pub(super) struct InfoResponse {
         #[serde(rename(deserialize = "peersCount"))]
         pub(super) peers_number: u64,
         #[serde(rename(deserialize = "headersHeight"))]
