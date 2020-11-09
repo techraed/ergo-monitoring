@@ -1,16 +1,11 @@
 //! Config file parsing logic
+
+use std::convert::TryInto;
 use std::ffi::OsStr;
 use std::path::Path;
 
 use reqwest::Url;
 use thiserror::Error;
-
-pub(super) trait IntoMonitoringConfig {
-    // Config file keys
-    const SOURCES: &'static str = "sources";
-
-    fn into_monitoring_config(self) -> Result<MonitoringConfig, ConfigError>;
-}
 
 // All possible errors during config file deserialization to `MonitoringConfig`
 #[derive(Error, Debug)]
@@ -28,7 +23,7 @@ pub(super) struct MonitoringConfig {
     pub(super) sources: Vec<Url>,
 }
 
-pub(super) fn parse(path_str: &str) -> Result<impl IntoMonitoringConfig, ConfigError> {
+pub(super) fn parse(path_str: &str) -> Result<impl TryInto<MonitoringConfig, Error = ConfigError>, ConfigError> {
     let format = get_file_format(path_str).expect("internal error: no data to extract file format");
     match format {
         "yml" => yml::parse(path_str),
@@ -41,10 +36,12 @@ fn get_file_format(path_str: &str) -> Option<&str> {
 }
 
 mod yml {
+    use std::convert::TryInto;
+
     use config::{Config, File};
     use reqwest::Url;
 
-    use super::{ConfigError, IntoMonitoringConfig, MonitoringConfig};
+    use super::{keys, ConfigError, MonitoringConfig};
 
     #[derive(Debug, Clone)]
     pub(super) struct YmlConfig(Config);
@@ -64,8 +61,10 @@ mod yml {
         }
     }
 
-    impl IntoMonitoringConfig for YmlConfig {
-        fn into_monitoring_config(self) -> Result<MonitoringConfig, ConfigError> {
+    impl TryInto<MonitoringConfig> for YmlConfig {
+        type Error = ConfigError;
+
+        fn try_into(self) -> Result<MonitoringConfig, Self::Error> {
             let YmlConfig(config) = self;
             let format_source = |source| format!("http://{}/info", source);
             let source_to_url = |source: String| {
@@ -73,7 +72,7 @@ mod yml {
             };
 
             let sources = config
-                .get_array(Self::SOURCES)
+                .get_array(keys::SOURCES)
                 .map_err(|_| ConfigError::NoConfigEntry)?
                 .iter()
                 .map(format_source)
@@ -83,4 +82,10 @@ mod yml {
             Ok(MonitoringConfig { sources })
         }
     }
+}
+
+mod keys {
+    //! Config file keys
+
+    pub(super) const SOURCES: &'static str = "sources";
 }
