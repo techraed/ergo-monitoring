@@ -14,9 +14,29 @@ async fn main() {
 }
 
 async fn run() -> Result<(), Error> {
-    let config = config::parse("config.yml")?;
+    let args = args::parse()?;
+    let config = config::parse(&args.config_file)?;
     service::run(config).await
 }
 
-// TODO
-// 1. calls to binary from any dir must work (should not fail parsing config.yml)
+mod args {
+    use anyhow::{anyhow, Error};
+
+    const DEFAULT_CONFIG: &str = "example.yml";
+
+    pub(super) struct Args {
+        pub(super) config_file: String,
+    }
+
+    pub(super) fn parse() -> Result<Args, Error> {
+        let config_file = std::env::args().nth(1).unwrap_or_else(|| {
+            format!(
+                "{}/{}",
+                std::option_env!("CARGO_MANIFEST_DIR")
+                    .expect("internal error: no cargo manifest dir env var"),
+                DEFAULT_CONFIG
+            )
+        });
+        Ok(Args { config_file })
+    }
+}

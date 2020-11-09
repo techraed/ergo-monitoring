@@ -12,8 +12,11 @@ pub(super) trait IntoMonitoringConfig {
     fn into_monitoring_config(self) -> Result<MonitoringConfig, ConfigError>;
 }
 
-#[derive(Error, Clone, PartialEq, Eq, Debug)]
+// All possible errors during config file deserialization to `MonitoringConfig`
+#[derive(Error, Debug)]
 pub(super) enum ConfigError {
+    #[error("Config file parsing failed: {0}")]
+    ConfigParsingError(String),
     #[error("Config key not found")]
     NoConfigEntry,
     #[error("Source string {0} can't be converted to url")]
@@ -55,7 +58,7 @@ mod yml {
             let mut config = Config::new();
             config
                 .merge(File::with_name(path_str))
-                .expect("internal error: config was changed during processing");
+                .map_err(|e| ConfigError::ConfigParsingError(e.to_string()))?;
 
             Ok(YmlConfig(config))
         }
