@@ -4,21 +4,13 @@ use anyhow::Error;
 use futures::future::join_all;
 use reqwest::{Url, Client};
 
-use crate::service::{InfoResp, create_client, MonitoringConfig};
+use crate::config::MonitoringConfig;
+use crate::service::{InfoResp, create_client};
 
 /// Monitors number of peers dumping results to stdout
-pub(super) async fn monitor<C: MonitoringConfig>(config: C) -> Result<(), Error> {
+pub(super) async fn monitor(config: MonitoringConfig) -> Result<(), Error> {
     println!("MONITORING PEERS");
-    // todo hard to read
-    let sources = config
-        .get_sources()
-        .map_err(Error::from)?
-        .iter()
-        .map(|s| Url::parse(s))
-        .filter(Result::is_ok)
-        .map(|url_res| url_res.expect("internal error: string can't be converted to url"))
-        .collect();
-    let peers_num = get_peers_number(sources).await;
+    let peers_num = get_peers_number(config.sources).await;
     dump_peers_num(peers_num);
 
     Ok(())
