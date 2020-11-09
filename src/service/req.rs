@@ -1,15 +1,15 @@
 //! Request/response useful data and functions.
 
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 
-use serde::Deserialize;
 use reqwest::{Client, ClientBuilder};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct InfoResp {
     #[serde(rename(deserialize = "peersCount"))]
-    pub(super) peers_number: u64
+    pub(super) peers_number: u64,
 }
 
 /// Reference counted, thread safe, cloneable client, which fails requests if timeout is met
@@ -20,5 +20,3 @@ pub(super) fn create_client(timeout_secs: u64) -> Arc<Client> {
         .expect("internal error: client build failed");
     Arc::new(client)
 }
-
-

@@ -1,6 +1,6 @@
 //! Config file parsing logic
-use std::path::Path;
 use std::ffi::OsStr;
+use std::path::Path;
 
 use reqwest::Url;
 use thiserror::Error;
@@ -17,33 +17,31 @@ pub(super) enum ConfigError {
     #[error("Config key not found")]
     NoConfigEntry,
     #[error("Source string {0} can't be converted to url")]
-    BadSourceString(String)
+    BadSourceString(String),
 }
 
 #[derive(Debug, Clone)]
 pub(super) struct MonitoringConfig {
-    pub(super) sources: Vec<Url>
+    pub(super) sources: Vec<Url>,
 }
 
 pub(super) fn parse(path_str: &str) -> Result<impl IntoMonitoringConfig, ConfigError> {
     let format = get_file_format(path_str).expect("internal error: no data to extract file format");
     match format {
         "yml" => yml::parse(path_str),
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
 fn get_file_format(path_str: &str) -> Option<&str> {
-    Path::new(path_str)
-        .extension()
-        .and_then(OsStr::to_str)
+    Path::new(path_str).extension().and_then(OsStr::to_str)
 }
 
 mod yml {
-    use reqwest::Url;
     use config::{Config, File};
+    use reqwest::Url;
 
-    use super::{ConfigError, MonitoringConfig, IntoMonitoringConfig};
+    use super::{ConfigError, IntoMonitoringConfig, MonitoringConfig};
 
     #[derive(Debug, Clone)]
     pub(super) struct YmlConfig(Config);
@@ -67,7 +65,9 @@ mod yml {
         fn into_monitoring_config(self) -> Result<MonitoringConfig, ConfigError> {
             let YmlConfig(config) = self;
             let format_source = |source| format!("http://{}/info", source);
-            let source_to_url = |source: String| Url::parse(source.as_str()).map_err(|_| ConfigError::BadSourceString(source));
+            let source_to_url = |source: String| {
+                Url::parse(source.as_str()).map_err(|_| ConfigError::BadSourceString(source))
+            };
 
             let sources = config
                 .get_array(Self::SOURCES)

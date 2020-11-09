@@ -24,4 +24,3 @@ async fn run() -> Result<(), Error> {
 // 3. design should be ready for multiple tasks
 // 5. general clean-ups
 // 6. better config handling: first parse with fails and then supply it to `run`
-
