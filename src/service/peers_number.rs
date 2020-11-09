@@ -1,3 +1,5 @@
+//! Getting peer numbers from provided sources
+
 use std::sync::Arc;
 
 use anyhow::Error;

@@ -1,3 +1,5 @@
+//! Ergo monitoring services
+
 use anyhow::Error;
 
 use crate::config::IntoMonitoringConfig;
