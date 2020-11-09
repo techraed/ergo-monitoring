@@ -19,7 +19,7 @@ async fn get_peers_number(sources: Vec<Url>) -> Vec<(u64, Url)> {
     let client = create_client(2);
     let mut tasks = Vec::with_capacity(sources.len());
     for source in sources {
-        tasks.push(peer_num_task(client.clone(), source))
+        tasks.push(get_peers_from_source(client.clone(), source))
     }
     join_all(tasks)
         .await
@@ -28,7 +28,7 @@ async fn get_peers_number(sources: Vec<Url>) -> Vec<(u64, Url)> {
         .collect()
 }
 
-async fn peer_num_task(client: Arc<Client>, source: Url) -> Result<(u64, Url), Error> {
+async fn get_peers_from_source(client: Arc<Client>, source: Url) -> Result<(u64, Url), Error> {
     let resp = client.get(source.as_str()).send().await?;
     let info_resp = resp.json::<InfoResp>().await?;
     Ok((info_resp.peers_number, source))
