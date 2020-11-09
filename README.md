@@ -2,6 +2,8 @@
 Debug service printing out useful for developers and managers information about ergo blockchain state.
 
 ## Run
+## System requirements
+Make sure you have OpenSSL installed on your system. For more info, [read](https://docs.rs/openssl/0.10.30/openssl/#building).
 ### Binary from ~/.cargo/bin
 1. Install [rust toolchain](https://github.com/rust-lang/rustup)
 2. `cargo install --git https://github.com/SabaunT/ergo-monitoring.git --tag [latest_version]`
