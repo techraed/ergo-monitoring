@@ -20,7 +20,7 @@ async fn run() -> Result<(), Error> {
 }
 
 mod args {
-    use anyhow::{anyhow, Error};
+    use anyhow::Error;
 
     const DEFAULT_CONFIG: &str = "example.yml";
 
