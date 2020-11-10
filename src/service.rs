@@ -4,7 +4,6 @@ use std::convert::TryInto;
 use std::sync::Arc;
 
 use anyhow::Error;
-
 use futures::future::join_all;
 use reqwest::{Client, Url};
 
